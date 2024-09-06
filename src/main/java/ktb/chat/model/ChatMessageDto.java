@@ -20,4 +20,5 @@ public class ChatMessageDto {
     private String message; // 메시지
     private String profileImage; // 프로필 이미지
     private String ageGroup; // 연령대
+    private int participants; // 참가자 수
 }
