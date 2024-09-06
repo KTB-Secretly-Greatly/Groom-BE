@@ -19,4 +19,5 @@ public class ChatMessageDto {
     private String nickname; // 채팅을 보낸 사람
     private String message; // 메시지
     private String profileImage; // 프로필 이미지
+    private String ageGroup; // 연령대
 }
