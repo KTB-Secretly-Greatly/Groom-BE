@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Test</title>
+</head>
+<body>
+<div id="chat">
+    <div id="status"></div>
+    <div id="message-container"></div>
+    <input type="text" id="message-input" placeholder="메시지를 입력하세요">
+    <button onclick="sendMessage()">전송</button>
+</div>
+
+<script>
+    const statusDiv = document.getElementById('status');
+    const messageContainer = document.getElementById('message-container');
+    const messageInput = document.getElementById('message-input');
+    let socket;
+
+    function connect() {
+        statusDiv.textContent = "연결 중...";
+        socket = new WebSocket('ws://localhost:8080/ws/chat');
+
+        socket.onopen = function(e) {
+            console.log('WebSocket 연결됨');
+            statusDiv.textContent = "연결됨";
+            const enterMessage = {
+                messageType: 'ENTER',
+                chatRoomId: 1,
+                nickname: '홍길동',
+                message: '입장했습니다.'
+            };
+            socket.send(JSON.stringify(enterMessage));
+        };
+
+        socket.onmessage = function(event) {
+            console.log('메시지 수신:', event.data);
+            const message = JSON.parse(event.data);
+            const messageElement = document.createElement('div');
+            messageElement.textContent = `${message.senderId}: ${message.message}`;
+            messageContainer.appendChild(messageElement);
+        };
+
+        socket.onclose = function(event) {
+            console.log('WebSocket 연결 종료됨:', event);
+            statusDiv.textContent = "연결 종료됨. 재연결 중...";
+            setTimeout(connect, 5000);
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket 오류:', error);
+            statusDiv.textContent = "오류 발생. 재연결 중...";
+        };
+    }
+
+    function sendMessage() {
+        const message = messageInput.value;
+        if (message && socket.readyState === WebSocket.OPEN) {
+            const chatMessage = {
+                messageType: 'TALK',
+                chatRoomId: 1,
+                nickname: '홍길동',
+                message: message
+            };
+            socket.send(JSON.stringify(chatMessage));
+            messageInput.value = '';
+        } else {
+            console.log('메시지를 보낼 수 없음. WebSocket 상태:', socket.readyState);
+        }
+    }
+
+    connect();
+</script>
+</body>
+</html>
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>WebSocket Chat Test</title>-->
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>-->
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div id="chat">-->
+<!--    <div id="message-container"></div>-->
+<!--    <input type="text" id="message-input" placeholder="메시지를 입력하세요">-->
+<!--    <button onclick="sendMessage()">전송</button>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--    const socket = new WebSocket('ws://localhost:8080/ws/chat');-->
+<!--    const messageContainer = document.getElementById('message-container');-->
+<!--    const messageInput = document.getElementById('message-input');-->
+
+<!--    socket.onopen = function(e) {-->
+<!--        console.log('WebSocket 연결됨');-->
+<!--        const enterMessage = {-->
+<!--            messageType: 'ENTER',-->
+<!--            chatRoomId: 1,-->
+<!--            senderId: 1,-->
+<!--            message: '입장했습니다.'-->
+<!--        };-->
+<!--        socket.send(JSON.stringify(enterMessage));-->
+<!--    };-->
+
+<!--    socket.onmessage = function(event) {-->
+<!--        const message = JSON.parse(event.data);-->
+<!--        const messageElement = document.createElement('div');-->
+<!--        messageElement.textContent = `${message.senderId}: ${message.message}`;-->
+<!--        messageContainer.appendChild(messageElement);-->
+<!--    };-->
+
+<!--    socket.onclose = function(event) {-->
+<!--        console.log('WebSocket 연결 종료됨');-->
+<!--    };-->
+
+<!--    function sendMessage() {-->
+<!--        const message = messageInput.value;-->
+<!--        if (message) {-->
+<!--            const chatMessage = {-->
+<!--                messageType: 'TALK',-->
+<!--                chatRoomId: 1,-->
+<!--                senderId: 1,-->
+<!--                message: message-->
+<!--            };-->
+<!--            socket.send(JSON.stringify(chatMessage));-->
+<!--            messageInput.value = '';-->
+<!--        }-->
+<!--    }-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->

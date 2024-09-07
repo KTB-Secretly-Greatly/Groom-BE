@@ -24,7 +24,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 
     private final Set<WebSocketSession> sessions = new HashSet<>();
     private final Map<Long, Set<WebSocketSession>> chatRoomSessionMap = new HashMap<>();
-    private final Map<WebSocketSession, ChatMessageDto> sessionUserMap = new HashMap<>(); // 세션과 사용자 정보 매핑
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -45,47 +44,25 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
         Long chatRoomId = chatMessageDto.getChatRoomId();
         log.info("roomId {}", chatMessageDto.getChatRoomId());
 
-        // 세션과 사용자 정보를 맵에 저장
-        sessionUserMap.put(session, chatMessageDto);
-
         // 메모리 상에 채팅방에 대한 세션 없으면 만들어줌
-        if (!chatRoomSessionMap.containsKey(chatRoomId)) {
-            chatRoomSessionMap.put(chatRoomId, new HashSet<>());
+        if(!chatRoomSessionMap.containsKey(chatRoomId)){
+            chatRoomSessionMap.put(chatRoomId,new HashSet<>());
         }
         Set<WebSocketSession> chatRoomSession = chatRoomSessionMap.get(chatRoomId);
 
-        // 새로운 사용자가 들어왔을 때, 기존 참가자들에게 정보 전송
+        // message 에 담긴 타입을 확인한다.
+        // 이때 message 에서 getType 으로 가져온 내용이
+        // ChatDTO 의 열거형인 MessageType 안에 있는 ENTER 과 동일한 값이라면
         if (chatMessageDto.getMessageType().equals(ChatMessageDto.MessageType.ENTER)) {
+            // sessions 에 넘어온 session 을 담고,
             chatRoomSession.add(session);
-            // 기존 참가자들에게 새 참가자의 정보를 전송
-            chatRoomSession.forEach(sess -> {
-                if (sess != session && sess.isOpen()) {
-                    ChatMessageDto newUserInfoMessage = new ChatMessageDto();
-                    newUserInfoMessage.setMessageType(ChatMessageDto.MessageType.TALK);
-
-                    sendMessage(sess, newUserInfoMessage);
-                }
-            });
-
-            // 새로 들어온 참가자에게 기존 참가자들의 정보를 전송
-            chatRoomSession.forEach(sess -> {
-                if (sess != session && sess.isOpen()) {
-                    ChatMessageDto existingUserInfo = sessionUserMap.get(sess);
-                    if (existingUserInfo != null) {
-                        ChatMessageDto existingUserInfoMessage = new ChatMessageDto();
-                        existingUserInfoMessage.setMessageType(ChatMessageDto.MessageType.TALK);
-                        existingUserInfoMessage.setMessage("나이 그룹은 " + existingUserInfo.getAgeGroup());
-
-                        sendMessage(session, existingUserInfoMessage);
-                    }
-                }
-            });
         }
-
         removeClosedSession(chatRoomSession);
 
-        // 참가자 수 갱신
+        // 참가자 수 계산
         int participantsCount = chatRoomSession.size();
+
+        // 참가자 수를 메시지에 포함시켜 클라이언트에 전송
         chatMessageDto.setParticipants(participantsCount);
         sendMessageToChatRoom(chatMessageDto, chatRoomSession);
     }
